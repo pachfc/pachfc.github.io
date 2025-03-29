@@ -11,39 +11,24 @@ const para = document.querySelector("#info");
 let refreshInterval = null;
 
 function load() {
-  // Initialise the Tableau object
+  //initialise the tableau object
   tableau.extensions.initializeAsync().then(() => {
     console.log("Tableau object loaded");
-
-    // Event listener on the start button
+    // Eventlistener on the start button
     btn.addEventListener("click", () => {
-      const intervalSeconds = parseInt(input.value);
-
-      if (!isNaN(intervalSeconds) && intervalSeconds > 0) {
-        para.innerHTML = `Refresh is running every ${intervalSeconds} seconds`;
-
-        // Clear existing interval if any
-        if (refreshInterval) {
-          clearInterval(refreshInterval);
-        }
-
-        // Run one refresh immediately
-        initTableau();
-
-        // Start the refresh interval
+      if (input.value !== "") {
+        para.innerHTML = `Refresh is running every ${input.value} seconds`;
         refreshInterval = setInterval(() => {
           initTableau();
-        }, intervalSeconds * 1000);
+        }, input.value * 1000);
       } else {
         para.innerHTML = "Please specify seconds till refresh";
       }
     });
 
-    // Event listener on the stop button
     btnStop.addEventListener("click", () => {
-      if (refreshInterval) {
+      if (input.value !== "") {
         clearInterval(refreshInterval);
-        refreshInterval = null;
         console.log("Stopped the refresh..");
         para.innerHTML = "Refresh is not running";
       }
@@ -51,22 +36,26 @@ function load() {
   });
 }
 
-// ✅ Refresh all data sources in the dashboard
 function initTableau() {
+  // get the Tableau elements
   const dashboard = tableau.extensions.dashboardContent.dashboard;
+  const sheets = dashboard.worksheets;
 
-  dashboard.getDataSourcesAsync().then(dataSources => {
-    console.log(`Refreshing all ${dataSources.length} data sources...`);
+  // Create a Set to store unique data sources across all worksheets
+  const allDataSources = new Set();
 
-    dataSources.forEach(ds => {
-      console.log(`Refreshing data source: ${ds.name}`);
-      ds.refreshAsync()
-        .then(() => {
-          console.log(`✅ Successfully refreshed: ${ds.name}`);
-        })
-        .catch(error => {
-          console.error(`❌ Error refreshing ${ds.name}:`, error);
-        });
+  // Collect all data sources from each sheet
+  Promise.all(sheets.map(sheet => sheet.getDataSourcesAsync())).then(results => {
+    results.forEach(sources => {
+      sources.forEach(source => {
+        allDataSources.add(source);
+      });
+    });
+
+    // Refresh each unique data source
+    console.log("Refreshing all datasources...");
+    allDataSources.forEach(source => {
+      source.refreshAsync();
     });
   });
 }
