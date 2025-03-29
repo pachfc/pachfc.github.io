@@ -1,3 +1,4 @@
+// When the DOM has loaded, run the function load
 document.addEventListener("DOMContentLoaded", load);
 
 // Grab the input box, the buttons and paragraph
@@ -10,50 +11,47 @@ const para = document.querySelector("#info");
 let refreshInterval = null;
 
 function load() {
+  // Initialise the Tableau object
   tableau.extensions.initializeAsync().then(() => {
     console.log("Tableau object loaded");
 
-    // Start Refresh Button
+    // Event listener on the start button
     btn.addEventListener("click", () => {
-      const seconds = parseInt(input.value, 10);
+      if (input.value !== "") {
+        para.innerHTML = `Refresh is running every ${input.value} seconds`;
 
-      if (!isNaN(seconds) && seconds > 0) {
-        para.innerHTML = `Refresh is running every ${seconds} seconds`;
-
-        // Clear existing interval if one exists
+        // Clear existing interval if any
         if (refreshInterval) {
           clearInterval(refreshInterval);
         }
 
-        // Set new interval
+        // Start the refresh interval
         refreshInterval = setInterval(() => {
-          refreshAllDataSources();
-        }, seconds * 1000);
-
-        // Optional: Do one immediate refresh
-        refreshAllDataSources();
+          initTableau();
+        }, input.value * 1000);
       } else {
         para.innerHTML = "Please specify seconds till refresh";
       }
     });
 
-    // Stop Refresh Button
+    // Event listener on the stop button
     btnStop.addEventListener("click", () => {
-      if (refreshInterval) {
+      if (input.value !== "") {
         clearInterval(refreshInterval);
         refreshInterval = null;
-        console.log("Stopped the refresh.");
+        console.log("Stopped the refresh..");
         para.innerHTML = "Refresh is not running";
       }
     });
   });
 }
 
-function refreshAllDataSources() {
+// ✅ Updated to refresh all data sources in the dashboard
+function initTableau() {
   const dashboard = tableau.extensions.dashboardContent.dashboard;
 
   dashboard.getDataSourcesAsync().then(dataSources => {
-    console.log(`Found ${dataSources.length} data source(s).`);
+    console.log(`Refreshing all ${dataSources.length} data sources...`);
 
     dataSources.forEach(ds => {
       console.log(`Refreshing data source: ${ds.name}`);
