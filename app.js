@@ -11,43 +11,37 @@ const para = document.querySelector("#info");
 let refreshInterval = null;
 
 function load() {
-  // Initialise the Tableau extension
+  //initialise the tableau object
   tableau.extensions.initializeAsync().then(() => {
     console.log("Tableau object loaded");
-    // Event listener on the start button
+    // Eventlistener on the start button
     btn.addEventListener("click", () => {
       if (input.value !== "") {
-        para.innerHTML = `Refresh is running every ${input.value} seconds<br/>`;
+        para.innerHTML = `Refresh is running every ${input.value} seconds`;
         refreshInterval = setInterval(() => {
           initTableau();
         }, input.value * 1000);
       } else {
-        para.innerHTML = "Please specify seconds till refresh<br/>";
+        para.innerHTML = "Please specify seconds till refresh";
       }
     });
 
-    // Event listener on the stop button
     btnStop.addEventListener("click", () => {
-      clearInterval(refreshInterval);
-      para.innerHTML += "Refresh is not running<br/>";
+      if (input.value !== "") {
+        clearInterval(refreshInterval);
+        console.log("Stopped the refresh..");
+        para.innerHTML = "Refresh is not running";
+      }
     });
   });
 }
 
 function initTableau() {
+  // get the Tableau elements
   const dashboard = tableau.extensions.dashboardContent.dashboard;
-  const worksheets = dashboard.worksheets;
-
-  // Refresh the data on every worksheet
-  const refreshPromises = worksheets.map(ws => {
-    return ws.refreshDataAsync();
-  });
-
-  Promise.all(refreshPromises)
-    .then(() => {
-      console.log("All worksheets refreshed successfully.");
-    })
-    .catch(err => {
-      console.error("Error refreshing worksheets: ", err);
-    });
+  const sheets = dashboard.worksheets[0];
+  const datasource = sheets.getDataSourcesAsync();
+  // refresh said data source
+  console.log("Refreshing Datasource..");
+  datasource.then(source => source[0].refreshAsync());
 }
