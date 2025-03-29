@@ -17,18 +17,23 @@ function load() {
 
     // Event listener on the start button
     btn.addEventListener("click", () => {
-      if (input.value !== "") {
-        para.innerHTML = `Refresh is running every ${input.value} seconds`;
+      const intervalSeconds = parseInt(input.value);
+
+      if (!isNaN(intervalSeconds) && intervalSeconds > 0) {
+        para.innerHTML = `Refresh is running every ${intervalSeconds} seconds`;
 
         // Clear existing interval if any
         if (refreshInterval) {
           clearInterval(refreshInterval);
         }
 
+        // Run one refresh immediately
+        initTableau();
+
         // Start the refresh interval
         refreshInterval = setInterval(() => {
           initTableau();
-        }, input.value * 1000);
+        }, intervalSeconds * 1000);
       } else {
         para.innerHTML = "Please specify seconds till refresh";
       }
@@ -36,7 +41,7 @@ function load() {
 
     // Event listener on the stop button
     btnStop.addEventListener("click", () => {
-      if (input.value !== "") {
+      if (refreshInterval) {
         clearInterval(refreshInterval);
         refreshInterval = null;
         console.log("Stopped the refresh..");
@@ -46,7 +51,7 @@ function load() {
   });
 }
 
-// ✅ Updated to refresh all data sources in the dashboard
+// ✅ Refresh all data sources in the dashboard
 function initTableau() {
   const dashboard = tableau.extensions.dashboardContent.dashboard;
 
