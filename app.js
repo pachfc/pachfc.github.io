@@ -11,53 +11,43 @@ const para = document.querySelector("#info");
 let refreshInterval = null;
 
 function load() {
-  // initialise the tableau object
+  // Initialise the Tableau extension
   tableau.extensions.initializeAsync().then(() => {
     console.log("Tableau object loaded");
     // Event listener on the start button
     btn.addEventListener("click", () => {
       if (input.value !== "") {
-        para.innerHTML = `Refresh is running every ${input.value} seconds`;
+        para.innerHTML = `Refresh is running every ${input.value} seconds<br/>`;
         refreshInterval = setInterval(() => {
           initTableau();
         }, input.value * 1000);
       } else {
-        para.innerHTML = "Please specify seconds till refresh";
+        para.innerHTML = "Please specify seconds till refresh<br/>";
       }
     });
 
     // Event listener on the stop button
     btnStop.addEventListener("click", () => {
-      if (input.value !== "") {
-        clearInterval(refreshInterval);
-        console.log("Stopped the refresh..");
-        para.innerHTML = "Refresh is not running";
-      }
+      clearInterval(refreshInterval);
+      para.innerHTML += "Refresh is not running<br/>";
     });
   });
 }
 
 function initTableau() {
   const dashboard = tableau.extensions.dashboardContent.dashboard;
-  // Use the dashboard method to get all datasources used in the dashboard
-  dashboard.getDataSourcesAsync()
-    .then(datasources => {
-      console.log(`Found ${datasources.length} datasource(s).`);
-      if (datasources.length === 0) {
-        console.log("No datasources found on this dashboard.");
-        return;
-      }
-      console.log("Refreshing all datasources...");
-      const refreshPromises = datasources.map(ds => {
-        console.log("Refreshing datasource: " + ds.name);
-        return ds.refreshAsync();
-      });
-      return Promise.all(refreshPromises);
-    })
+  const worksheets = dashboard.worksheets;
+
+  // Refresh the data on every worksheet
+  const refreshPromises = worksheets.map(ws => {
+    return ws.refreshDataAsync();
+  });
+
+  Promise.all(refreshPromises)
     .then(() => {
-      console.log("All datasources refreshed successfully.");
+      console.log("All worksheets refreshed successfully.");
     })
     .catch(err => {
-      console.error("Error refreshing datasources: ", err);
+      console.error("Error refreshing worksheets: ", err);
     });
 }
