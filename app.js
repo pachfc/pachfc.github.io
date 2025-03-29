@@ -38,37 +38,20 @@ function load() {
 }
 
 function initTableau() {
-  // Get the Tableau dashboard and all its worksheets
   const dashboard = tableau.extensions.dashboardContent.dashboard;
-  const worksheets = dashboard.worksheets;
-
-  // For each worksheet, get its datasources.
-  // Use Promise.all to wait for all getDataSourcesAsync calls to finish.
-  const datasourcePromises = worksheets.map(ws => ws.getDataSourcesAsync());
-
-  Promise.all(datasourcePromises)
-    .then(allDatasourcesArrays => {
-      // Use a Map to hold unique datasources keyed by their id
-      const uniqueDatasources = new Map();
-
-      // Flatten the arrays and add each datasource to the map if not already present.
-      allDatasourcesArrays.forEach(datasourceArray => {
-        datasourceArray.forEach(ds => {
-          if (!uniqueDatasources.has(ds.id)) {
-            uniqueDatasources.set(ds.id, ds);
-          }
-        });
-      });
-
-      console.log("Refreshing all unique datasources...");
-
-      // Refresh each unique datasource and collect the refresh promises.
-      const refreshPromises = Array.from(uniqueDatasources.values()).map(ds => {
+  // Use the dashboard method to get all datasources used in the dashboard
+  dashboard.getDataSourcesAsync()
+    .then(datasources => {
+      console.log(`Found ${datasources.length} datasource(s).`);
+      if (datasources.length === 0) {
+        console.log("No datasources found on this dashboard.");
+        return;
+      }
+      console.log("Refreshing all datasources...");
+      const refreshPromises = datasources.map(ds => {
         console.log("Refreshing datasource: " + ds.name);
         return ds.refreshAsync();
       });
-
-      // Wait for all refresh actions to complete.
       return Promise.all(refreshPromises);
     })
     .then(() => {
