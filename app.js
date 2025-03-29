@@ -11,10 +11,10 @@ const para = document.querySelector("#info");
 let refreshInterval = null;
 
 function load() {
-  //initialise the tableau object
+  // initialise the tableau object
   tableau.extensions.initializeAsync().then(() => {
     console.log("Tableau object loaded");
-    // Eventlistener on the start button
+    // Event listener on the start button
     btn.addEventListener("click", () => {
       if (input.value !== "") {
         para.innerHTML = `Refresh is running every ${input.value} seconds`;
@@ -26,6 +26,7 @@ function load() {
       }
     });
 
+    // Event listener on the stop button
     btnStop.addEventListener("click", () => {
       if (input.value !== "") {
         clearInterval(refreshInterval);
@@ -37,14 +38,43 @@ function load() {
 }
 
 function initTableau() {
-  // get the Tableau elements
+  // Get the Tableau dashboard and all its worksheets
   const dashboard = tableau.extensions.dashboardContent.dashboard;
-  const sheet = dashboard.worksheets[0];
-  // get all datasources from the worksheet and refresh each one
-  sheet.getDataSourcesAsync().then(datasources => {
-    console.log("Refreshing all Datasources..");
-    datasources.forEach(ds => {
-      ds.refreshAsync();
+  const worksheets = dashboard.worksheets;
+
+  // For each worksheet, get its datasources.
+  // Use Promise.all to wait for all getDataSourcesAsync calls to finish.
+  const datasourcePromises = worksheets.map(ws => ws.getDataSourcesAsync());
+
+  Promise.all(datasourcePromises)
+    .then(allDatasourcesArrays => {
+      // Use a Map to hold unique datasources keyed by their id
+      const uniqueDatasources = new Map();
+
+      // Flatten the arrays and add each datasource to the map if not already present.
+      allDatasourcesArrays.forEach(datasourceArray => {
+        datasourceArray.forEach(ds => {
+          if (!uniqueDatasources.has(ds.id)) {
+            uniqueDatasources.set(ds.id, ds);
+          }
+        });
+      });
+
+      console.log("Refreshing all unique datasources...");
+
+      // Refresh each unique datasource and collect the refresh promises.
+      const refreshPromises = Array.from(uniqueDatasources.values()).map(ds => {
+        console.log("Refreshing datasource: " + ds.name);
+        return ds.refreshAsync();
+      });
+
+      // Wait for all refresh actions to complete.
+      return Promise.all(refreshPromises);
+    })
+    .then(() => {
+      console.log("All datasources refreshed successfully.");
+    })
+    .catch(err => {
+      console.error("Error refreshing datasources: ", err);
     });
-  });
 }
