@@ -39,23 +39,12 @@ function load() {
 function initTableau() {
   // get the Tableau elements
   const dashboard = tableau.extensions.dashboardContent.dashboard;
-  const sheets = dashboard.worksheets;
-
-  // Create a Set to store unique data sources across all worksheets
-  const allDataSources = new Set();
-
-  // Collect all data sources from each sheet
-  Promise.all(sheets.map(sheet => sheet.getDataSourcesAsync())).then(results => {
-    results.forEach(sources => {
-      sources.forEach(source => {
-        allDataSources.add(source);
-      });
-    });
-
-    // Refresh each unique data source
-    console.log("Refreshing all datasources...");
-    allDataSources.forEach(source => {
-      source.refreshAsync();
+  const sheet = dashboard.worksheets[0];
+  // get all datasources from the worksheet and refresh each one
+  sheet.getDataSourcesAsync().then(datasources => {
+    console.log("Refreshing all Datasources..");
+    datasources.forEach(ds => {
+      ds.refreshAsync();
     });
   });
 }
