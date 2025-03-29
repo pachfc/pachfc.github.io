@@ -11,24 +11,37 @@ const para = document.querySelector("#info");
 let refreshInterval = null;
 
 function load() {
-  //initialise the tableau object
+  // Initialise the Tableau object
   tableau.extensions.initializeAsync().then(() => {
     console.log("Tableau object loaded");
-    // Eventlistener on the start button
+
+    // Start Refresh Button
     btn.addEventListener("click", () => {
       if (input.value !== "") {
         para.innerHTML = `Refresh is running every ${input.value} seconds`;
+        
+        // Clear any existing interval
+        if (refreshInterval) {
+          clearInterval(refreshInterval);
+        }
+
+        // Set new interval
         refreshInterval = setInterval(() => {
           initTableau();
         }, input.value * 1000);
+
+        // Run one refresh immediately
+        initTableau();
       } else {
         para.innerHTML = "Please specify seconds till refresh";
       }
     });
 
+    // Stop Refresh Button
     btnStop.addEventListener("click", () => {
-      if (input.value !== "") {
+      if (refreshInterval) {
         clearInterval(refreshInterval);
+        refreshInterval = null;
         console.log("Stopped the refresh..");
         para.innerHTML = "Refresh is not running";
       }
@@ -37,11 +50,22 @@ function load() {
 }
 
 function initTableau() {
-  // get the Tableau elements
   const dashboard = tableau.extensions.dashboardContent.dashboard;
-  const sheets = dashboard.worksheets[0];
-  const datasource = sheets.getDataSourcesAsync();
-  // refresh said data source
-  console.log("Refreshing Datasource..");
-  datasource.then(source => source[0].refreshAsync());
+
+  // Loop through all worksheets
+  dashboard.worksheets.forEach(worksheet => {
+    worksheet.getDataSourcesAsync().then(dataSources => {
+      dataSources.forEach(ds => {
+        console.log(`Refreshing data source: ${ds.name}`);
+        
+        ds.refreshAsync()
+          .then(() => {
+            console.log(`Successfully refreshed: ${ds.name}`);
+          })
+          .catch(error => {
+            console.error(`Error refreshing ${ds.name}:`, error);
+          });
+      });
+    });
+  });
 }
