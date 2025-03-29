@@ -1,4 +1,3 @@
-// When the DOM has loaded, run the function load
 document.addEventListener("DOMContentLoaded", load);
 
 // Grab the input box, the buttons and paragraph
@@ -11,27 +10,28 @@ const para = document.querySelector("#info");
 let refreshInterval = null;
 
 function load() {
-  // Initialise the Tableau object
   tableau.extensions.initializeAsync().then(() => {
     console.log("Tableau object loaded");
 
     // Start Refresh Button
     btn.addEventListener("click", () => {
-      if (input.value !== "") {
-        para.innerHTML = `Refresh is running every ${input.value} seconds`;
-        
-        // Clear any existing interval
+      const seconds = parseInt(input.value, 10);
+
+      if (!isNaN(seconds) && seconds > 0) {
+        para.innerHTML = `Refresh is running every ${seconds} seconds`;
+
+        // Clear existing interval if one exists
         if (refreshInterval) {
           clearInterval(refreshInterval);
         }
 
         // Set new interval
         refreshInterval = setInterval(() => {
-          initTableau();
-        }, input.value * 1000);
+          refreshAllDataSources();
+        }, seconds * 1000);
 
-        // Run one refresh immediately
-        initTableau();
+        // Optional: Do one immediate refresh
+        refreshAllDataSources();
       } else {
         para.innerHTML = "Please specify seconds till refresh";
       }
@@ -42,30 +42,28 @@ function load() {
       if (refreshInterval) {
         clearInterval(refreshInterval);
         refreshInterval = null;
-        console.log("Stopped the refresh..");
+        console.log("Stopped the refresh.");
         para.innerHTML = "Refresh is not running";
       }
     });
   });
 }
 
-function initTableau() {
+function refreshAllDataSources() {
   const dashboard = tableau.extensions.dashboardContent.dashboard;
 
-  // Loop through all worksheets
-  dashboard.worksheets.forEach(worksheet => {
-    worksheet.getDataSourcesAsync().then(dataSources => {
-      dataSources.forEach(ds => {
-        console.log(`Refreshing data source: ${ds.name}`);
-        
-        ds.refreshAsync()
-          .then(() => {
-            console.log(`Successfully refreshed: ${ds.name}`);
-          })
-          .catch(error => {
-            console.error(`Error refreshing ${ds.name}:`, error);
-          });
-      });
+  dashboard.getDataSourcesAsync().then(dataSources => {
+    console.log(`Found ${dataSources.length} data source(s).`);
+
+    dataSources.forEach(ds => {
+      console.log(`Refreshing data source: ${ds.name}`);
+      ds.refreshAsync()
+        .then(() => {
+          console.log(`✅ Successfully refreshed: ${ds.name}`);
+        })
+        .catch(error => {
+          console.error(`❌ Error refreshing ${ds.name}:`, error);
+        });
     });
   });
 }
